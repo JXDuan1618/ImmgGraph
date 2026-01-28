@@ -1,6 +1,6 @@
-# Multi-Omic Immunology Graph Neural Network Analysis
+# ImmGraph learns immune interaction topology linking cross-omic regulation to glioma outcome
 
-This repository contains the code for a research paper on multi-omic immunology analysis using heterogeneous graph neural networks. The project integrates DNA, RNA, and protein data to build predictive models for immunological outcomes.
+This repository contains the code for a research paper on multi-omic immunology analysis using heterogeneous graph neural networks. 
 
 ## Project Structure
 
@@ -36,7 +36,7 @@ capsule/
 
 This project implements a heterogeneous graph neural network (ImmGraph) that integrates multi-omic data (DNA mutations, RNA expression, and protein abundance) to predict immunological signatures. The framework includes:
 
-1. **Data Preprocessing**: Normalization, edge construction based on biological pathways (KEGG) and protein-protein interactions (PPI)
+1. **Data Preprocessing**: Normalization, edge construction based on biological pathways (immune pathways) and protein-protein interactions (PPI)
 2. **Graph Neural Network Training**: Heterogeneous GNN that learns representations across DNA, RNA, and protein nodes
 3. **Downstream Tasks**: Classification and regression tasks using learned graph embeddings
 4. **Topological Analysis**: Topological data analysis and community detection
@@ -196,8 +196,8 @@ python Figure5/heatmap_star.py
 The heterogeneous graph contains:
 - **Node types**: `dna`, `rna`, `protein`
 - **Edge types**:
-  - `dna_interact`: DNA-DNA interactions (KEGG pathways)
-  - `rna_interact`: RNA-RNA interactions (KEGG pathways)
+  - `dna_interact`: DNA-DNA interactions (immune pathways)
+  - `rna_interact`: RNA-RNA interactions (immune pathways)
   - `pro_interact`: Protein-protein interactions (PPI)
   - `transcribe`: DNA to RNA connections (same genes)
   - `translate`: RNA to protein connections (same genes)
@@ -235,7 +235,7 @@ Key hyperparameters can be adjusted in the training scripts:
 If you use this code in your research, please cite:
 
 ```
-[Citation information to be added]
+Jingxian Duan (jx.duan@siat.ac.cn)
 ```
 
 ## License
