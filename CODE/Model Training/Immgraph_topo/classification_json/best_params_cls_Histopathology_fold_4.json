@@ -1,0 +1,15 @@
+{
+  "outer_fold": 4,
+  "best_value": 0.8901502857553278,
+  "best_params": {
+    "hidden_dim": 96,
+    "dropout": 0.6944162175482074,
+    "lr": 0.002697754572573718,
+    "num_gnn_layers": 2,
+    "weight_decay": 0.0031263051855729244,
+    "l2_lambda": 5.5054582654056455e-06
+  },
+  "n_trials": 100,
+  "train_size": 232,
+  "test_size": 58
+}
