@@ -1,4 +1,3 @@
-import numpy as np
 import torch.nn as nn
 import random
 import torch
@@ -7,7 +6,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import TensorDataset
 
-from multi_graph_gen import clf_graph
+from model import clf_graph
 import pandas as pd
 import scipy.stats as stats
 # import os
@@ -27,11 +26,11 @@ import csv as _csv
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, message=".*TypedStorage is deprecated.*")
 
-inputfolder = "data/processed_data_discovery/"
-outputfolder = "data/ImmGraph_results/"
+inputfolder = "/input_bigdata/"
+outputfolder = "/model_big/"
 
 
-# R2损失函数
+# R² loss function
 class R2Loss(nn.Module):
     def __init__(self):
         super(R2Loss, self).__init__()
@@ -40,7 +39,7 @@ class R2Loss(nn.Module):
         ss_total = torch.sum((y_true - torch.mean(y_true)) ** 2)
         ss_residual = torch.sum((y_true - y_pred) ** 2)
         r2 = 1 - (ss_residual / ss_total)
-        return 1 - r2  # minimize this value
+        return 1 - r2  # Our objective is to minimize this value
 
 
 def load_configuratiton(model, device):
@@ -51,7 +50,7 @@ def load_configuratiton(model, device):
     config['scheduler'] = ReduceLROnPlateau(config['optimizer'], 'min', patience=3, factor=0.5, min_lr=1e-6)
     config['num_epochs'] = 100
     config['save_path'] = "E:/Multi-omic Immunity/GCN_immune/output_lgg/best_model.pth"
-    config['early_stopping'] = 20
+    config['early_stopping'] = 20  # Number of epochs before early stopping
     config['clip'] = 1.0
 
     return config
@@ -207,15 +206,15 @@ def check_for_nan(tensor, name="Tensor", epoch=None, batch_idx=None):
     return False
 
 def save_metrics_to_csv(metrics, fold, seed):
-    # 定义 CSV 文件路径
+    # Define the CSV file path
     metrics_csv = f"fold_{fold}_metrics_seed_{seed}.csv"
-    # 写入标题行
+    # Write the header row
     header = ["Fold", "Seed", "MAE", "MedAE", "RMSE", "R2", "Pearson"]
     with open(metrics_csv, mode='a', newline="") as file:
         writer = csv.writer(file)
-        if file.tell() == 0:
+        if file.tell() == 0:  # If the file is empty, write the header
             writer.writerow(header)
-        # Write the metric data for each fold
+        # Write the metrics for each fold
         writer.writerow(metrics)
 
 def compute_all_metrics(pred, target):
@@ -235,15 +234,16 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     criterion = R2Loss()
     best_train = 0
-    valid_rna_before = -float("inf")  # Initialize the worst R² value
-    valid_dna_before = -float("inf")
-    valid_pro_before = -float("inf")
+    valid_rna_before = -float("inf")  
+    valid_dna_before = -float("inf")  
+    valid_pro_before = -float("inf")  
     best_epoch = 0
-    no_improvement_counter = 0  # Counter for consecutive non-improvements.
-    patience = 10  # Maximum tolerance epoch count for no improvement
+    no_improvement_counter = 0  # Counter for consecutive epochs without improvement
+    patience = 10  # Set the early stopping patience (maximum epochs without improvement)
     loss_before = 10
     valid_rna_losses = []
     # print("train_loader shape:", train_loader.shape)
+    # Set the initial number of training epochs to 150
     initial_epochs = 150
     # for batch in train_loader:
     # print(batch)
@@ -289,7 +289,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
         ('dna', 'transcribe', 'rna'): (train_dna_id, train_rna1_id),
         ('rna', 'translate', 'protein'): (train_rna_id, train_pro_id)}
 
-    train_graph = dgl.heterograph(train_data_dict).to(device)  ##模型使用
+    train_graph = dgl.heterograph(train_data_dict).to(device)  #model
     train_graph.nodes['dna'].data['feat'] = train_nodes_dna.to(device)
     train_graph.nodes['rna'].data['feat'] = train_nodes_rna.to(device)
     train_graph.nodes['protein'].data['feat'] = train_nodes_protein.to(device)
@@ -311,8 +311,8 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
     print("max srcpro_id:", train_srcpro_id.max().item())
     print("max dstpro_id:", train_dstpro_id.max().item())'''
 
-    # 添加病人编号到节点数据
-    train_graph.nodes['dna'].data['patient_id'] = train_nodes_dna[:, -1]  # 假设病人编号在最后一列
+    # Add patient IDs to the node data
+    train_graph.nodes['dna'].data['patient_id'] = train_nodes_dna[:, -1]  # Assume patient IDs are in the last column
     train_graph.nodes['rna'].data['patient_id'] = train_nodes_rna[:, -1]
     train_graph.nodes['protein'].data['patient_id'] = train_nodes_protein[:, -1]
 
@@ -353,12 +353,12 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
     print("valid dna feat device:", valid_graph.nodes['dna'].data['feat'].device)'''
 
 
-    # 添加病人编号到节点数据
+    # Add patient IDs to the node data
     valid_graph.nodes['dna'].data['patient_id'] = valid_nodes_dna[:, -1]
     valid_graph.nodes['rna'].data['patient_id'] = valid_nodes_rna[:, -1]
     valid_graph.nodes['protein'].data['patient_id'] = valid_nodes_protein[:, -1]
 
-    model = clf_graph(train_graph)  # 模型使用
+    model = clf_graph(train_graph) 
     configs = load_configuratiton(model, device)
     model = model.to(device)
 
@@ -369,7 +369,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
     best_r2 = -float("inf")
     early_stop_counter = 0
     
-    batch_size = 200
+    batch_size = 200  # Set the batch size
     num_samples = train_nodes_dna.shape[1]
     patient_indices = list(range(num_samples))
 
@@ -387,17 +387,17 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
             with autocast():
                 output_dna, output_rna, output_pro, train_edge_weight, train_logits_dna, train_logits_rna, train_logits_pro = model(train_graph)
                 
-                # check for NaN
+                # Check for NaN values
                 if check_for_nan(output_dna, "Output DNA", epoch=epoch, batch_idx=i) or check_for_nan(output_rna, "Output RNA", epoch=epoch, batch_idx=i) or check_for_nan(output_pro, "Output Protein", epoch=epoch, batch_idx=i):
-                    continue
+                    continue  # Skip batches containing NaN values
 
                 if idx.max().item() >= output_dna.shape[0]:
-                    print(f"[wrong] idx is Out of range! idx.max={idx.max().item()}, output_dna.shape={output_dna.shape}")
+                    print(f"[Error] idx is out of bounds! idx.max={idx.max().item()}, output_dna.shape={output_dna.shape}")
                     exit(1)
 
-                loss_dna = criterion(output_dna[idx], train_imdna[idx])
-                loss_rna = criterion(output_rna[idx], train_imrna[idx])
-                loss_pro = criterion(output_pro[idx], train_impro[idx])
+                loss_dna = criterion(train_imdna[idx], output_dna[idx])
+                loss_rna = criterion(train_imrna[idx], output_rna[idx])
+                loss_pro = criterion(train_impro[idx], output_pro[idx])
                 loss = loss_dna + loss_rna + loss_pro
 
             scaler.scale(loss).backward()
@@ -407,7 +407,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
 
             total_loss += loss.item()
             torch.cuda.empty_cache()
-
+        # scheduler.step()  # Call after the optimizer step
         model.eval()
         with torch.no_grad():
             train_output_dna, train_output_rna, train_output_pro = batched_predict(model, train_graph, batch_size, device)
@@ -433,21 +433,20 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
 
 
             # valid_loss = criterion(valid_output,valid_status)
-            rna_weight = 1.5
-            valid_rna_loss = criterion(valid_output_rna, valid_imrna)
-            valid_dna_loss = criterion(valid_output_dna, valid_imdna)
-            valid_pro_loss = criterion(valid_output_pro, valid_impro)
+            valid_rna_loss = criterion(valid_imrna, valid_output_rna)
+            valid_dna_loss = criterion(valid_imdna, valid_output_dna)
+            valid_pro_loss = criterion(valid_impro, valid_output_pro)
 
             valid_rna_losses.append(valid_rna_loss.item())
             #valid_rna_r2 = calculate_metrics(valid_output_rna, valid_imrna)[2]
 
-            valid_loss = rna_weight * valid_rna_loss + valid_dna_loss + valid_pro_loss
+            valid_loss = valid_rna_loss + valid_dna_loss + valid_pro_loss
 
             valid_rna_mae, valid_rna_rmse, valid_rna_r2 = calculate_metrics(valid_output_rna, valid_imrna)
             valid_dna_mae, valid_dna_rmse, valid_dna_r2 = calculate_metrics(valid_output_dna, valid_imdna)
             valid_pro_mae, valid_pro_rmse, valid_pro_r2 = calculate_metrics(valid_output_pro, valid_impro)
-
-            torch.cuda.empty_cache()
+            # Clear the GPU cache
+            torch.cuda.empty_cache()  # Free memory after each epoch
 
             valid_r2 = min(valid_rna_r2, valid_dna_r2, valid_pro_r2)
             current_valid_score = min(valid_rna_r2, valid_dna_r2, valid_pro_r2)
@@ -455,7 +454,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
                 best_valid_score = current_valid_score
                 best_epoch = epoch
                 best_state_dict = copy.deepcopy(model.state_dict())
-                print(f"Epoch {epoch} for the beat, R² = {best_valid_score}")
+                print(f"Epoch {epoch} New best validation R² = {best_valid_score}")
             with open('training_log_304_100.txt', 'a') as log_file:
                 log_file.write(f"Epoch: {epoch}, Valid rna r2={valid_rna_r2}, Valid dna r2={valid_dna_r2}, Valid pro r2={valid_pro_r2}, valid_loss={valid_loss.cpu()}\n")
             print("Epoch:", epoch, "Valid rna r2=", valid_rna_r2, "Valid dna r2=", valid_dna_r2, "Valid pro r2=",
@@ -463,7 +462,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
 
             # if (valid_ci>0.6 and train_ci>0.7) or (valid_ci<0.4 and train_ci<0.3):
 
-            #torch.save(model, "/home/dengjingran/Multi_omic_Immunity/GCN_immune/"+outputfolder+"goodepoch_" + str(epoch) + fold + seed+'.pth')
+            #torch.save(model, "/GCN_immune/"+outputfolder+"goodepoch_" + str(epoch) + fold + seed+'.pth')
 
             # valid_fe_rna = pd.DataFrame(valid_logits_rna.detach().cpu().numpy())
             # valid_fe_rna.to_csv("F:/GCN_multiomic/"+outputfolder+"okepoch" + str(epoch) + fold + seed+ 'valid_fe_rna.csv')
@@ -502,34 +501,34 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
             #with open('training_log.txt', 'a') as log_file:
                 #log_file.write(f"Loss difference: {loss_before - train_loss.detach().cpu()}\n")
             print(loss_before - total_loss)
-            # save the best model
+            # Save the best model
             best_train=min(train_rna_r2, train_dna_r2, train_pro_r2)
             best_valid=min(valid_rna_r2, valid_dna_r2, valid_pro_r2)
             best_epoch = epoch
             if epoch >= initial_epochs:
-
+                # If the validation R² improves
                 if valid_rna_r2 > valid_rna_before and valid_dna_r2 > valid_dna_before and valid_pro_r2 > valid_pro_before:
-                    valid_rna_before = valid_rna_r2  # Keep the previous validation
+                    valid_rna_before = valid_rna_r2  # Keep the previous validation R²
                     valid_dna_before = valid_dna_r2
                     valid_pro_before = valid_pro_r2
-                    #best_valid = valid_rna_r2
+                    #best_valid = valid_rna_r2  # Update the best validation R²
                     #best_valid = valid_r2
                     best_epoch = epoch
-                    no_improvement_counter = 0
+                    no_improvement_counter = 0  # Reset the counter
                 else:
-                    valid_rna_before = valid_rna_r2  # Keep the previous validation
+                    valid_rna_before = valid_rna_r2  # Keep the previous validation R²
                     valid_dna_before = valid_dna_r2
                     valid_pro_before = valid_pro_r2
                     best_epoch = epoch
-                    no_improvement_counter += 1
+                    no_improvement_counter += 1  # Increment the counter if there is no improvement
 
                 #print(f" no_improvement_counter is {no_improvement_counter},valid_rna_before is {valid_rna_before},valid_rna_r2 is {valid_rna_r2}")
-
+                # Stop early after 20 consecutive epochs without improvement
                 if no_improvement_counter >= patience:
-
+                    # Combine the model outputs with the original labels
                     train_data = pd.DataFrame({
-                        'train_output_rna_1': train_output_rna.cpu().detach().numpy()[:, 0],  # Get the predicted values from the first colum
-                        'train_output_rna_2': train_output_rna.cpu().detach().numpy()[:, 1],  # Get the predicted values from the second column.
+                        'train_output_rna_1': train_output_rna.cpu().detach().numpy()[:, 0],  # Get the predictions from the first column
+                        'train_output_rna_2': train_output_rna.cpu().detach().numpy()[:, 1],  # Get the predictions from the second column
                         'train_output_dna_1': train_output_dna.cpu().detach().numpy()[:, 0],
                         'train_output_dna_2': train_output_dna.cpu().detach().numpy()[:, 1],
                         'train_output_pro_1': train_output_pro.cpu().detach().numpy()[:, 0],
@@ -543,8 +542,8 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
                     })
 
                     valid_data = pd.DataFrame({
-                        'valid_output_rna_1': valid_output_rna.cpu().detach().numpy()[:, 0],  # Get the predicted values from the first column
-                        'valid_output_rna_2': valid_output_rna.cpu().detach().numpy()[:, 1],  # Get the predicted values from the second column
+                        'valid_output_rna_1': valid_output_rna.cpu().detach().numpy()[:, 0],  # Get the predictions from the first column
+                        'valid_output_rna_2': valid_output_rna.cpu().detach().numpy()[:, 1],  # Get the predictions from the second column
                         'valid_output_dna_1': valid_output_dna.cpu().detach().numpy()[:, 0],
                         'valid_output_dna_2': valid_output_dna.cpu().detach().numpy()[:, 1],
                         'valid_output_pro_1': valid_output_pro.cpu().detach().numpy()[:, 0],
@@ -557,44 +556,54 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
                         'valid_impro_2': valid_impro.cpu().detach().numpy()[:, 1]
                     })
                     # save to CSV
-                    train_data.to_csv(f"/home/dengjingran/Multi_omic_Immunity/GCN_immune/{outputfolder}train_0/okepoch{str(epoch)}{fold}{seed}_train_combined.csv",index=False)
-                    valid_data.to_csv(f"/home/dengjingran/Multi_omic_Immunity/GCN_immune/{outputfolder}valid_0/okepoch{str(epoch)}{fold}{seed}_valid_combined.csv",index=False)
+                    train_data.to_csv(f"/Multi_omic_Immunity/GCN_immune/{outputfolder}train_0/okepoch{str(epoch)}{fold}{seed}_train_combined.csv",index=False)
+                    valid_data.to_csv(f"/Multi_omic_Immunity/GCN_immune/{outputfolder}valid_0/okepoch{str(epoch)}{fold}{seed}_valid_combined.csv",index=False)
                     
                     '''valid_out_rna = pd.DataFrame(valid_output_rna.detach().cpu().numpy())
-                    valid_out_rna.to_csv("/home/dengjingran/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_output_rna.csv')
+                    valid_out_rna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_output_rna.csv')
 
                     valid_out_pro = pd.DataFrame(valid_output_pro.detach().cpu().numpy())
-                    valid_out_pro.to_csv("/home/dengjingran/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_output_pro.csv')
+                    valid_out_pro.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_output_pro.csv')
 
                     valid_out_dna = pd.DataFrame(valid_output_dna.detach().cpu().numpy())
-                    valid_out_dna.to_csv("/home/dengjingran/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_output_dna.csv')
+                    valid_out_dna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_output_dna.csv')
 
-                    # 新增：保存 train 的最终输出（假设 train_output_* 已获取）
+                    
                     train_out_rna = pd.DataFrame(train_output_rna.detach().cpu().numpy())
-                    train_out_rna.to_csv("/home/dengjingran/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_output_rna.csv')
+                    train_out_rna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_output_rna.csv')
 
                     train_out_pro = pd.DataFrame(train_output_pro.detach().cpu().numpy())
-                    train_out_pro.to_csv("/home/dengjingran/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_output_pro.csv')
+                    train_out_pro.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_output_pro.csv')
 
                     train_out_dna = pd.DataFrame(train_output_dna.detach().cpu().numpy())
-                    train_out_dna.to_csv("/home/dengjingran/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_output_dna.csv')'''
+                    train_out_dna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_output_dna.csv')'''
                     
                     train_fe_rna = pd.DataFrame(train_logits_rna.detach().cpu().numpy())
-                    train_fe_rna.to_csv("/ImmGraph/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_fe_rna.csv')
+                    train_fe_rna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_fe_rna.csv')
 
                     train_fe_pro = pd.DataFrame(train_logits_pro.detach().cpu().numpy())
-                    train_fe_pro.to_csv("/ImmGraph/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_fe_pro.csv')
+                    train_fe_pro.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_fe_pro.csv')
 
                     train_fe_dna = pd.DataFrame(train_logits_dna.detach().cpu().numpy())
-                    train_fe_dna.to_csv("/ImmGraph/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_fe_dna.csv')
+                    train_fe_dna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'train_fe_dna.csv')
 
 
                     valid_fe_rna = pd.DataFrame(valid_logits_rna.detach().cpu().numpy())
-                    valid_fe_rna.to_csv("/ImmGraph/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_rna.csv')
+                    valid_fe_rna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_rna.csv')
                     valid_fe_pro = pd.DataFrame(valid_logits_pro.detach().cpu().numpy())
-                    valid_fe_pro.to_csv("/ImmGraph/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_pro.csv')
+                    valid_fe_pro.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_pro.csv')
                     valid_fe_dna = pd.DataFrame(valid_logits_dna.detach().cpu().numpy())
-                    valid_fe_dna.to_csv("/ImmGraph/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_dna.csv')
+                    valid_fe_dna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_dna.csv')
+
+                    #valid_fe_rna = pd.DataFrame(valid_logits_rna.detach().cpu().numpy())
+                    #valid_fe_rna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_rna.csv')
+                    #valid_fe_pro = pd.DataFrame(valid_logits_pro.detach().cpu().numpy())
+                    #valid_fe_pro.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_pro.csv')
+                    #valid_fe_dna = pd.DataFrame(valid_logits_dna.detach().cpu().numpy())
+                    #valid_fe_dna.to_csv("/Multi_omic_Immunity/GCN_immune/" + outputfolder + "node_feature/" + "okepoch" + str(epoch) + fold + seed + 'valid_fe_dna.csv')
+                    
+
+
 
                     train_preds = pd.DataFrame({
                         'patient_id': list(im.iloc[train_list, 0]),
@@ -605,7 +614,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
                         'pro_pred_1': train_output_pro[:, 0].cpu().numpy(),
                         'pro_pred_2': train_output_pro[:, 1].cpu().numpy(),
                     })
-                    train_preds.to_csv(f"/ImmGraph/{outputfolder}patient_pred/okepoch{str(epoch)}{fold}{seed}_train_patient_preds.csv", index=False)
+                    #train_preds.to_csv(f"/Multi_omic_Immunity/GCN_immune/{outputfolder}patient_pred/okepoch{str(epoch)}{fold}{seed}_train_patient_preds.csv", index=False)
 
 
                     valid_preds = pd.DataFrame({
@@ -617,23 +626,31 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
                         'pro_pred_1': valid_output_pro[:, 0].cpu().numpy(),
                         'pro_pred_2': valid_output_pro[:, 1].cpu().numpy(),
                     })
-                    valid_preds.to_csv(f"/ImmGraph/{outputfolder}patient_pred/okepoch{str(epoch)}{fold}{seed}_valid_patient_preds.csv", index=False)
+                    #valid_preds.to_csv(f"/Multi_omic_Immunity/GCN_immune/{outputfolder}patient_pred/okepoch{str(epoch)}{fold}{seed}_valid_patient_preds.csv", index=False)
 
 
                     for key, value in train_edge_weight.items():
-
+                        # Move the weights from GPU to CPU and convert them to a NumPy array
                         edge_weight = value.detach().cpu().numpy()
 
-
+                        # If edge_weight is three-dimensional, use squeeze to remove unnecessary dimensions
                         edge_weight = edge_weight.squeeze()
+
+                        # Save the edge weights to a CSV file with the current epoch, fold, and key in the filename
+                        #edge_weight_df = pd.DataFrame(edge_weight)
+                        #edge_weight_df.to_csv(f"/Multi_omic_Immunity/GCN_immune/{outputfolder}train_edge_0/okepoch{str(epoch)}{fold}{seed}_{key}_edge_weight.csv",index=False)
 
                     for key, value in valid_edge_weight.items():
-
+                        #Move the weights from the GPU to the CPU and convert them to a NumPy array
                         edge_weight = value.detach().cpu().numpy()
 
+                        # If edge_weight is three-dimensional, use squeeze to remove unnecessary dimensions
                         edge_weight = edge_weight.squeeze()
 
-                    print(f"At epoch {epoch} , the validation R² = {best_valid}. No improvement for 10 consecutive times, stopping training early.")
+                        # Save the edge weights to a CSV file named with the current epoch, fold, and key
+                        #edge_weight_df = pd.DataFrame(edge_weight)
+                        #edge_weight_df.to_csv(f"/Multi_omic_Immunity/GCN_immune/{outputfolder}valid_edge_0/okepoch{str(epoch)}{fold}{seed}_{key}_edge_weight.csv",index=False)
+                    print(f"At epoch {epoch}, validation R² = {best_valid}. No improvement for 10 consecutive epochs; stopping training early.")
 
 
                     for etype in train_edge_weight:
@@ -656,19 +673,29 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
                             if key != 'weight':
                                 del valid_graph.edges[etype].data[key]
                                 
-                    # 保存异构图到文件
+                    # Save the heterogeneous graph to a file
 
-                    file_path_1 = f"data/ImmGraph_results/heterographs_ImmGraph/train_graph_epoch_{epoch}{fold}.dgl"
-                    file_path_2 = f"data/ImmGraph_results/heterographs_ImmGraph/valid_graph_epoch_{epoch}{fold}.dgl"
+                    file_path_1 = f"/Multi_omic_Immunity/GCN_immune/output_lgg/heterographs_big_0_20260910/train_graph_epoch_{epoch}{fold}.dgl"
+                    file_path_2 = f"/Multi_omic_Immunity/GCN_immune/output_lgg/heterographs_big_0_20260910/valid_graph_epoch_{epoch}{fold}.dgl"
                     dgl.save_graphs(file_path_1, [train_graph])
                     dgl.save_graphs(file_path_2, [valid_graph])
+                    
+                    '''valid_patient_ids = valid_graph._graph_labels["patient_ids"].cpu().numpy()
+                    valid_patient_str_ids = [reverse_id_map[i] for i in valid_patient_ids]
+                    pd.DataFrame({'patient_index': valid_patient_ids, 'patient_id': valid_patient_str_ids}) \
+                        .to_csv(f"E:/Multi-omic Immunity/GCN_immune/{outputfolder}valid_graph_epoch_{epoch}{fold}_patients.csv",index=False)
+
+                    train_patient_ids = train_graph._graph_labels["patient_ids"].cpu().numpy()
+                    train_patient_str_ids = [reverse_id_map[i] for i in train_patient_ids]
+                    pd.DataFrame({'patient_index': train_patient_ids, 'patient_id': train_patient_str_ids}) \
+                        .to_csv(f"E:/Multi-omic Immunity/GCN_immune/{outputfolder}train_graph_epoch_{epoch}{fold}_patients.csv", index=False)'''
 
                     print(f"Saved graphs for epoch {epoch}")
                     break
     if best_state_dict is not None:
-        save_path = f"/home/dengjingran/Multi_omic_Immunity/GCN_immune/{outputfolder}best_model_{fold}_{seed}.pth"
+        save_path = f"/Multi_omic_Immunity/GCN_immune/{outputfolder}best_model_{fold}_{seed}.pth"
         torch.save(best_state_dict, save_path)
-        print(f"[{fold}] Training completed: The best model for this fold (epoch= {best_epoch}, validation R²= {best_valid_score} has been saved to {save_path}")
+        print(f"[{fold}] Training complete: saved the best model for this fold (epoch={best_epoch}, validation R²={best_valid_score}) to {save_path}")
     
 
     if best_state_dict is not None:
@@ -685,7 +712,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
         train_output_dna, train_output_rna, train_output_pro, *_ = model(train_graph)
 
 
-# prediction of validation
+# Validation set metrics
     valid_pred_rna = valid_output_rna.detach().float().cpu().reshape(-1)
     valid_pred_dna = valid_output_dna.detach().float().cpu().reshape(-1)
     valid_pred_pro = valid_output_pro.detach().float().cpu().reshape(-1)
@@ -694,7 +721,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
     valid_tgt_dna = valid_imdna.detach().float().cpu().reshape(-1)
     valid_tgt_pro = valid_impro.detach().float().cpu().reshape(-1)
 
-# prediction of training
+# Training set metrics
     train_pred_rna = train_output_rna.detach().float().cpu().reshape(-1)
     train_pred_dna = train_output_dna.detach().float().cpu().reshape(-1)
     train_pred_pro = train_output_pro.detach().float().cpu().reshape(-1)
@@ -704,15 +731,15 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
     train_tgt_pro = train_impro.detach().float().cpu().reshape(-1)
   
     del valid_output_rna, valid_output_dna, valid_output_pro
-    del train_output_rna, train_output_dna, train_output_pro  # 【新增】
+    del train_output_rna, train_output_dna, train_output_pro  
     torch.cuda.empty_cache()
 
-# metrics of prediction dastaset
+# Calculate validation set metrics
     valid_rna_m = compute_all_metrics(valid_pred_rna, valid_tgt_rna)
     valid_dna_m = compute_all_metrics(valid_pred_dna, valid_tgt_dna)
     valid_pro_m = compute_all_metrics(valid_pred_pro, valid_tgt_pro)
 
-# metrics of training dataset
+# Calculate training set metrics
     train_rna_m = compute_all_metrics(train_pred_rna, train_tgt_rna)
     train_dna_m = compute_all_metrics(train_pred_dna, train_tgt_dna)
     train_pro_m = compute_all_metrics(train_pred_pro, train_tgt_pro)
@@ -727,7 +754,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
         "valid_pro_MedAE": valid_pro_m["MedAE"], "valid_pro_Pearson": valid_pro_m["Pearson"],
         "valid_pro_MAE": valid_pro_m["MAE"], "valid_pro_RMSE": valid_pro_m["RMSE"], "valid_pro_R2": valid_pro_m["R2"],
     
-
+    # Training set metrics
         "train_rna_MedAE": train_rna_m["MedAE"], "train_rna_Pearson": train_rna_m["Pearson"],
         "train_rna_MAE": train_rna_m["MAE"], "train_rna_RMSE": train_rna_m["RMSE"], "train_rna_R2": train_rna_m["R2"],
         "train_dna_MedAE": train_dna_m["MedAE"], "train_dna_Pearson": train_dna_m["Pearson"],
@@ -738,7 +765,7 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
         "best_min_R2": best_valid_score, "best_epoch": best_epoch,
     }
 
-    metrics_csv = f"/ImmGraph/{outputfolder}fold_metrics_with_train.csv"
+    metrics_csv = f"/Multi_omic_Immunity/GCN_immune/{outputfolder}fold_metrics_with_train.csv"
     os.makedirs(os.path.dirname(metrics_csv), exist_ok=True)
     write_header = not os.path.exists(metrics_csv)
 
@@ -762,13 +789,21 @@ def train(train_loader, valid_loader, fold, seed, device, im, train_list, valid_
 
 
 def main(device):
-    batch_size = 8
+    batch_size = 8  
     all_rna_losses = []
-    DATA_PATH = "/ImmGraph/" + inputfolder
+    DATA_PATH = "/Multi_omic_Immunity/GCN_immune/" + inputfolder
 
     nodes_dna = pd.read_csv(DATA_PATH + "nodes_dna.csv", sep=',', header=0)
     nodes_rna = pd.read_csv(DATA_PATH + "nodes_rna.csv", sep=',', header=0)
     nodes_protein = pd.read_csv(DATA_PATH + "nodes_protein.csv", sep=',', header=0)
+    # normalize by calculate log10
+    # nodes_rna=np.log10(nodes_rna+10)
+    # nodes_protein=np.log10(nodes_protein+10)
+    # nodes_phospho=np.log10(nodes_phospho+10)
+    # normalize
+    #nodes_dna = nodes_dna / nodes_dna.max().max()
+    #nodes_rna = nodes_rna / nodes_rna.max().max()
+    #nodes_protein = nodes_protein / nodes_protein.max().max()
 
     edges_dna = pd.read_csv(DATA_PATH + "edges_dna.csv", sep=',', header=0)
     edges_rna = pd.read_csv(DATA_PATH + "edges_rna.csv", sep=',', header=0)
@@ -778,7 +813,7 @@ def main(device):
     edges_rnapro = pd.read_csv(DATA_PATH + "edges_rnapro.csv", sep=',', header=0)
 
     im = pd.read_csv(DATA_PATH + "im.csv", sep=',', header=0)
-    patient_ids = im.iloc[:, 0].values
+    patient_ids = im.iloc[:, 0].values  
 
     all_list = list(range(im.shape[0]))
     # all_list.pop(0)
@@ -835,7 +870,19 @@ def main(device):
         fold4_ids = im.iloc[VALID_LIST4, 0].values
         fold5_ids = im.iloc[VALID_LIST5, 0].values
 
-        # 将每个fold的数据保存到列表
+
+        
+        fold4_train_ids = im.iloc[TRAIN_LIST4, 0].values
+        fold4_valid_ids = im.iloc[VALID_LIST4, 0].values
+
+        fold4_df = pd.DataFrame({
+            "Fold4_Train": pd.Series(fold4_train_ids),
+            "Fold4_Valid": pd.Series(fold4_valid_ids)
+        })
+
+        fold4_df.to_csv("fold4_train_valid_patient_ids.csv", index=False)
+
+       
         fold_data.append({
             'Fold': 'Fold1',
             'Train': TRAIN_LIST1,
@@ -861,6 +908,33 @@ def main(device):
             'Train': TRAIN_LIST5,
             'Valid': VALID_LIST5
         })
+        # INFO_PATH = "F:/GCN_multiomic/Pubdata/"+inputfolder+"/input_gen/survivalA.csv"
+
+        # info = pd.read_csv(INFO_PATH)
+        # train_info = info.iloc[TRAIN_LIST1]
+        # valid_info = info.iloc[VA LID_LIST1]
+        # if not no_difference(train_info, valid_info):
+        #     continue
+
+        # train_info = info.iloc[TRAIN_LIST2]
+        # valid_info = info.iloc[VALID_LIST2]
+        # if not no_difference(train_info, valid_info):
+        #     continue
+
+        # train_info = info.iloc[TRAIN_LIST3]
+        # valid_info = info.iloc[VALID_LIST3]
+        # if not no_difference(train_info, valid_info):
+        #     continue
+
+        # train_info = info.iloc[TRAIN_LIST4]
+        # valid_info = info.iloc[VALID_LIST4]
+        # if not no_difference(train_info, valid_info):
+        #     continue
+
+        # train_info = info.iloc[TRAIN_LIST5]
+        # valid_info = info.iloc[VALID_LIST5]
+        # if not no_difference(train_info, valid_info):
+        #     continue
 
         print(cur_seed)
 
@@ -874,7 +948,7 @@ def main(device):
                                                                    seed=str(cur_seed), device=device, im=im, train_list=TRAIN_LIST1, valid_list=VALID_LIST1)
         all_rna_losses.append(rna_losses1)
 
-        with open('training_log_304_100.txt', 'a') as log_file:
+        with open('training_log.txt', 'a') as log_file:
             log_file.write(
                 f"Fold1___________________________________________________________Best Train r2={best_train1}, "
                 f"Valid r2={best_valid1}, Epoch={best_epoch1}, seed={cur_seed}\n")
@@ -980,10 +1054,32 @@ def main(device):
     Results["epoche5"] = epoche5
     Results["fold5train"] = fold5train
     Results["fold5valid"] = fold5valid
+    '''Results.to_csv("E:/Multi-omic Immunity/GCN_immune/" + outputfolder + "5foldcv.csv", index=False)'''
 
-    # 将所有fold的数据保存为DataFrame
+    
     fold_df = pd.DataFrame(fold_data)
 
+    
+    #fold_df.to_csv("E:/Multi-omic Immunity/GCN_immune/output_lgg/fold_data_164_0.csv", index=False)
+    # traindata=pd.concat([pd.DataFrame({"TRAIN_LIST1":TRAIN_LIST1}),pd.DataFrame({"TRAIN_LIST2":TRAIN_LIST2}),
+    #                      pd.DataFrame({"TRAIN_LIST3":TRAIN_LIST3}),pd.DataFrame({"TRAIN_LIST4":TRAIN_LIST4}),
+    #                      pd.DataFrame({"TRAIN_LIST5":TRAIN_LIST5})], axis=1)
+    # traindata.to_csv("F:/GCN_multiomic/"+outputfolder+"traindata.csv",index=False)
+
+    # validdata=pd.concat([pd.DataFrame({"VALID_LIST1":VALID_LIST1}),pd.DataFrame({"VALID_LIST2":VALID_LIST2}),
+    #                      pd.DataFrame({"VALID_LIST3":VALID_LIST3}),pd.DataFrame({"VALID_LIST4":VALID_LIST4}),
+    #                      pd.DataFrame({"VALID_LIST5":VALID_LIST5})], axis=1)
+    # validdata.to_csv("F:/GCN_multiomic/"+outputfolder+"validdata.csv",index=False)
+
+    
+    #for i, rna_losses in enumerate(all_rna_losses):
+        #plt.plot(rna_losses, label=f'Fold {i + 1}')
+
+    #plt.xlabel('Epoch')
+    #plt.ylabel('Loss')
+    #plt.title('RNA Loss over Epochs for Each Fold')
+    #plt.legend()
+    #plt.show()
 
 
 if __name__ == "__main__":

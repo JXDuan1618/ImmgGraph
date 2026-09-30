@@ -43,7 +43,7 @@ class ResidualBlock(nn.Module):
 class Classifier(torch.nn.Module):
     def __init__(self, dna_num_classes=2, rna_num_classes=2, pro_num_classes=2):
         super(Classifier, self).__init__()
-        # RNA分支
+        # RNA branch
         self.rna_layers = nn.Sequential(
             nn.BatchNorm1d(9084),
             nn.Linear(9084, 1024),
@@ -59,7 +59,7 @@ class Classifier(torch.nn.Module):
 
 
 
-        # DNA分支
+        # DNA branch
         self.dna_layers = nn.Sequential(
             nn.BatchNorm1d(9084),
             nn.Linear(9084, 1024),
@@ -74,7 +74,7 @@ class Classifier(torch.nn.Module):
         )
 
 
-        # 蛋白质分支
+        # protein branch
         self.pro_layers = nn.Sequential(
             torch.nn.BatchNorm1d(9084),
             torch.nn.Linear(9084, 1024),
@@ -107,11 +107,8 @@ class Classifier(torch.nn.Module):
 
         x_rna = self.rna_layers(x)
 
-        rna_weight = 1
-        dna_weight = 1.5
 
-
-        return rna_weight * x_rna, dna_weight * x_dna, x_pro
+        return x_rna, x_dna, x_pro
 
 
 
@@ -179,7 +176,7 @@ class clf_graph(nn.Module):
         logits_pro = final_graph['protein']
 
         logits = torch.cat((logits_dna, logits_rna, logits_pro), dim=0)
-        out_dna, out_rna, out_pro = self.clf(logits.t())
+        out_rna, out_dna, out_pro = self.clf(logits.t())
 
         return out_dna, out_rna, out_pro, edge_weight, logits_dna, logits_rna, logits_pro
 
