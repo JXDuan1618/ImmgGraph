@@ -152,7 +152,7 @@ print(f"✅ Loaded {len(y_map)} labels from Excel (serial_id & TERT_mutation).")
 # Load Graphs
 # ==============================
 print("Loading heterograph files...")
-graph_dir = r"subgraph_ZZU_new"
+graph_dir = r"F:\subgraph_ZZU_new"
 graph_paths = [f for f in os.listdir(graph_dir) if f.endswith(".dgl")]
 
 # Step 2: process graphs
@@ -1240,7 +1240,7 @@ def run_optuna_optimization_multicls(train_graphs_all, train_labels_all, train_s
         'best_params': study.best_params,
         'n_trials': len(study.trials)
     }
-    out_json = r'outputs\metric\best_params_cls_Histopathology.json'
+    out_json = r'metric\best_params_cls_Histopathology.json'
     os.makedirs(os.path.dirname(out_json), exist_ok=True)
     with open(out_json, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
@@ -1518,7 +1518,7 @@ def _init_weights_deterministic(module):
         nn.init.constant_(module.bias, 0)
 
 
-def load_best_hyperparams(json_file=r'outputs\metric\best_params_cls_Histopathology_fold_1.json'):
+def load_best_hyperparams(json_file=r'metric\best_params_cls_Histopathology_fold_1.json'):
     with open(json_file, 'r') as f:
         results = json.load(f)
     return results['best_params']
@@ -1532,7 +1532,7 @@ def train_with_fixed_hyperparams():
 
     try:
         best_params = load_best_hyperparams(
-            r'outputs\metric\Histopathology\best_params_cls_Histopathology_fold_5.json'
+            r'best_params_cls_Histopathology_fold_5.json'
         )
     except Exception as e:
         print(f"[WARN] Failed to load best hyperparameters: {e}. Using default values.")
@@ -1576,7 +1576,7 @@ def train_with_fixed_hyperparams():
         train_serial_ids = [all_serial_ids[i] for i in train_idx]
         val_serial_ids = [all_serial_ids[i] for i in val_idx]
 
-        output_dir = fr"outputs\Histopathology\Histopathology_5\fold_{fold + 1}_gene_matrix"
+        output_dir = fr"metric\Histopathology\fold_{fold + 1}_gene_matrix"
 
         export_gene_matrix_by_omics(
             graphs=train_graphs_raw,
@@ -1678,7 +1678,7 @@ def run_optuna_5fold_outer_multicls(n_trials=100, seed=42):
         }
         all_fold_results.append(fold_result)
 
-        out_json = fr'outputs\metric\best_params_cls_Histopathology_fold_{outer_fold + 1}.json'
+        out_json = fr'metric\Histopathology\best_params_cls_Histopathology_fold_{outer_fold + 1}.json'
         os.makedirs(os.path.dirname(out_json), exist_ok=True)
         with open(out_json, 'w', encoding='utf-8') as f:
             json.dump(fold_result, f, indent=2, ensure_ascii=False)
@@ -1738,7 +1738,7 @@ def run_optuna_5fold_outer_multicls(n_trials=100, seed=42):
 
         print(f"✅ OUTER FOLD {outer_fold + 1} done, best metric = {best_metric:.4f}")
 
-    summary_json = r'outputs\metric\best_params_cls_Histopathology_5fold_all.json'
+    summary_json = r'metric\Histopathology\best_params_cls_Histopathology_5fold_all.json'
     with open(summary_json, 'w', encoding='utf-8') as f:
         json.dump(all_fold_results, f, indent=2, ensure_ascii=False)
     print(f"\n✅ All 5-fold best params saved to: {summary_json}")
@@ -1964,7 +1964,7 @@ def main():
         'n_trials': len(study.trials)
     }
 
-    with open(r'E:\conference\LGG\risk_csv\optuna_optimization_results_DFS_single_DNA.json', 'w') as f:
+    with open(r'optuna_optimization_results_DFS_single_DNA.json', 'w') as f:
         json.dump(results, f, indent=2)
 
     print(f"\nResults saved to 'optuna_optimization_results_DFS_single_DNA.json'")
