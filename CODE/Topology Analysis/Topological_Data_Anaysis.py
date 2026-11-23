@@ -10,7 +10,7 @@ from scipy.spatial.distance import cdist
 
 print("Loading graph and node embeddings...")
 graph_list, _ = dgl.load_graphs(
-    r"data/ImmGraph_results/heterographs_ImmGraph/train_graph_epoch_160f4s.dgl")
+    r"data/ImmGraph_results/heterographs_ImmGraph/train_graph_epoch_160f4s.dgl") #Take the intersection of the training and validation sets once the code is completed
 g = graph_list[0]
 
 # === Load node embeddings ===

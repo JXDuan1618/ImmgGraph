@@ -1,4 +1,3 @@
-"""Reproduce 100 fixed-seed GMM experiments from a fixed 932-feature input table."""
 
 from __future__ import annotations
 

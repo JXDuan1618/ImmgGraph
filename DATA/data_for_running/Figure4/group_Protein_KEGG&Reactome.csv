@@ -1,0 +1,4 @@
+,ID,Description,GeneRatio,BgRatio,RichFactor,FoldEnrichment,zScore,pvalue,p.adjust,qvalue,geneID,Count
+Oxidative Phosphorylation,Oxidative Phosphorylation,Oxidative Phosphorylation,8/48,132/5245,0.0606060606060606,6.62247474747475,6.28712629610293,2.10408881968606e-05,0.0015991075029614,0.00137319480863722,ATP6V1C1/COX7A2L/UQCRH/ATP5F1B/ATP5F1D/ATP6AP1/COX5A/ATP5PO,8
+TCA and Electron Transport,TheCitricAcidTcaCycleAndRespiratoryElectronTransport,TCA and Electron Transport,11/76,178/10646,0.061797753,8.656564163,8.734824949,4.68E-08,2.48E-05,2.18E-05,COX7A2L/ETFB/ETFDH/OGDH/UQCRH/ATP5F1B/IDH3A/ATP5F1D/COX5A/ATP5PO/LDHA,11
+Mitochondrial Energy Metabolism,RespiratoryElectronTransportAtpSynthesisByChemiosmoticCouplingAndHeatProductionByUncouplingProteins,Mitochondrial Energy Metabolism,8/76,127/10646,0.062992126,8.8238707,7.521049255,3.14E-06,0.000834151,0.000732538,COX7A2L/ETFB/ETFDH/UQCRH/ATP5F1B/ATP5F1D/COX5A/ATP5PO,8

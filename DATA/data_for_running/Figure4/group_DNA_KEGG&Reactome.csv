@@ -1,0 +1,6 @@
+,ID,Description,GeneRatio,BgRatio,RichFactor,FoldEnrichment,zScore,pvalue,p.adjust,qvalue,geneID,Count
+Noncanonical Wnt Signaling,BetaCateninIndependentWntSignaling,Noncanonical Wnt Signaling,2月5日,146/10646,0.01369863,29.16712329,7.428324829,0.001818014,0.033844644,0.008044567,AP2A1/PLCB1,2
+Neurotransmitter Signaling,NeurotransmitterReceptorsAndPostsynapticSignalTransmission,Neurotransmitter Signaling,2月5日,205/10646,0.009756098,20.77268293,6.196380781,0.003551453,0.033844644,0.008044567,AP2A1/PLCB1,2
+Gαq Signaling,GAlphaQSignallingEvents,Gαq Signaling,2月5日,216/10646,0.009259259,19.71481481,6.023332932,0.00393557,0.033844644,0.008044567,PLCB1/TRIO,2
+Acetylcholine-Insulin Signaling,AcetylcholineRegulatesInsulinSecretion,Acetylcholine-Insulin Signaling,1月5日,10/10646,0.1,212.92,14.53280327,0.004688664,0.033844644,0.008044567,PLCB1,1
+Fatty Acid-Insulin Signaling,FreeFattyAcidsRegulateInsulinSecretion,Fatty Acid-Insulin Signaling,1月5日,11/10646,0.090909091,193.5636364,13.85059682,0.005156561,0.033844644,0.008044567,PLCB1,1

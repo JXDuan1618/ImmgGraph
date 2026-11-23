@@ -10,7 +10,7 @@ from pandas import DataFrame
 from scipy import stats
 
 # === Load data ===
-rna = pd.read_csv(r"data/raw_data_discovery/05_FPKM_339_logtransformed.csv", sep=',', header=0, index_col=0)
+rna = pd.read_csv(r"data/raw_data_discovery/05_FPKM_339.csv", sep=',', header=0, index_col=0)
 dna = pd.read_csv(r"data/raw_data_discovery/09_DNA_all_306_new.csv", sep=',', header=0, index_col=0)
 protein = pd.read_csv(r"data/raw_data_discovery/06_Protein_304_new.csv", sep=',', header=0, index_col=0)
 PPIpro = pd.read_csv(r"data/raw_data_discovery/string_linkpro_202507.csv", sep=',', header=0)

@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 
 # Step 1: Load the CSV files into DataFrames
 immune_marker_df = pd.read_csv('data/raw_data_discovery/immune_marker.csv')
-rna_df = pd.read_csv(r'data/raw_data_discovery/05_FPKM_339_new_normalized.csv')
-protein_df = pd.read_csv(r'data/raw_data_discovery/06_Protein_304_new_normalized.csv')
-mutation_df = pd.read_csv(r'data/raw_data_discovery/09_DNA_all_306_new_normalized.csv')
+rna_df = pd.read_csv(r'data/raw_data_discovery/05_FPKM_339_new.csv')
+protein_df = pd.read_csv(r'data/raw_data_discovery/06_Protein_304_new.csv')
+mutation_df = pd.read_csv(r'data/raw_data_discovery/09_DNA_all_306_new.csv')
 # Step 2: Extract the list of gene names from the immune_marker DataFrame
 gene_names = immune_marker_df['Gene Names'].tolist()
 
