@@ -29,16 +29,15 @@ proteinsel = cleanpro.loc[cleanpro.index, list(patient)]
 rnasel = cleanrna.loc[cleanrna.index, list(patient)]
 dnasel = dna.loc[dna.index, list(patient)]
 
-rnaZ = pd.DataFrame(stats.zscore(rnasel.values, axis=None), index=rnasel.index, columns=rnasel.columns)
-proZ = pd.DataFrame(stats.zscore(proteinsel.values, axis=None), index=proteinsel.index, columns=proteinsel.columns)
-dnaZ = pd.DataFrame(stats.zscore(dnasel.values, axis=None), index=dnasel.index, columns=dnasel.columns)
+#If the datasheets have very different ranges, they should be scaled to a common range before edge generation
+#rnaZ = pd.DataFrame(stats.zscore(rnasel.values, axis=None), index=rnasel.index, columns=rnasel.columns)
+#proZ = pd.DataFrame(stats.zscore(proteinsel.values, axis=None), index=proteinsel.index, columns=proteinsel.columns)
+#dnaZ = pd.DataFrame(stats.zscore(dnasel.values, axis=None), index=dnasel.index, columns=dnasel.columns)
 
-rnaZ.insert(0, "node_id", np.arange(rnasel.shape[0]))
-proZ.insert(0, "node_id", np.arange(proteinsel.shape[0]))
-dnaZ.insert(0, "node_id", np.arange(dnasel.shape[0]))
-rnasel = rnaZ
-proteinsel = proZ
-dnasel = dnaZ
+rnasel.insert(0, "node_id", np.arange(rnasel.shape[0]))
+proteinsel.insert(0, "node_id", np.arange(proteinsel.shape[0]))
+dnasel.insert(0, "node_id", np.arange(dnasel.shape[0]))
+
 
 rnasel.to_csv(r"data/processed_data_discovery/nodes_rna.csv")
 proteinsel.to_csv(r"data/processed_data_discovery/nodes_protein.csv")

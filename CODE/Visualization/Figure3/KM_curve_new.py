@@ -25,11 +25,12 @@ import matplotlib as mpl
 mpl.rcParams['font.family'] = 'Arial'
 # Load the CSV files containing patient data into Pandas dataframes
 ####################################################################################
-train_df = pd.read_csv(r'/data/data_for_running/Figure3/fold_5_train_risk_ZZU.csv')
+train_df = pd.read_csv(r'E:\Multi-omic Immunity\GCN_immune\scripts\LGG\picture\figure_3_A\prognosis\KM_curve\correct_Discovery\fold_3_train_risk_ZZU_OS.csv')
 train_df["split"] = "train"
 train_df = train_df.rename(
     columns={'Risk': 'risk_score', 'Time': 'overall_survival', "Event": "vital_status"})
-val_df = pd.read_csv(r'/data/data_for_running/Figure3/fold_5_val_risk_ZZU.csv')
+###############################################################################
+val_df = pd.read_csv(r'E:\Multi-omic Immunity\GCN_immune\scripts\LGG\picture\figure_3_A\prognosis\KM_curve\correct_Discovery\fold_3_val_risk_ZZU_OS.csv')
 val_df["split"] = "valid"
 val_df = val_df.rename(
     columns={'Risk': 'risk_score', 'Time': 'overall_survival', "Event": "vital_status"})
@@ -122,8 +123,8 @@ val_vital_status = val_df['vital_status']
 
 # Determine the cutoff for high and low risk groups
 #######################################################
-cutoff_os = 1.5681877
-cutoff_dfs = 1.5681877
+cutoff_os = 2.8743167
+cutoff_dfs = 2.8743167
 train_high_risk = train_risk_scores >= cutoff_os
 train_low_risk = train_risk_scores < cutoff_os
 val_high_risk = val_risk_scores >= cutoff_dfs
@@ -133,15 +134,15 @@ train_df["risk_group"] = np.where(train_df["risk_score"] >= cutoff_os, "High-ris
 val_df["risk_group"] = np.where(val_df["risk_score"] >= cutoff_dfs, "High-risk", "Low-risk")
 
 # ----------------------------------------------------------
-# Export the results to CSV files for easy inspection of each patient’s group assignment.
+# 导出结果到 CSV 文件，方便查看每个病人的分组情况
 # ----------------------------------------------------------
-train_output_path = r"/results/fold_5_train_risk_ZZU_os_1.csv"
-val_output_path   = r"/results/fold_5_val_risk_ZZU_os_1.csv"
+train_output_path = r"E:\Multi-omic Immunity\GCN_immune\scripts\LGG\picture\figure_3_A\prognosis\KM_curve\high_low_csv\fold_3_train_risk_ZZU_OS.csv"
+val_output_path   = r"E:\Multi-omic Immunity\GCN_immune\scripts\LGG\picture\figure_3_A\prognosis\KM_curve\high_low_csv\fold_3_val_risk_ZZU_OS.csv"
 
 train_df.to_csv(train_output_path, index=False)
 val_df.to_csv(val_output_path, index=False)
 
-print("The grouping results for the training and validation sets have been exported：")
+print("训练集与验证集的分组结果已导出：")
 print(train_output_path)
 print(val_output_path)
 
@@ -185,11 +186,11 @@ kmf_train_low.plot_survival_function(ax=ax1, label='Low-risk Group', ci_show=Tru
 
 # Add "at risk" counts manually
 add_at_risk_counts(kmf_train_high, kmf_train_low, ax=ax1, rows_to_show=['At risk'], labels=['High Risk', 'Low Risk'],
-                   fontsize=60)
+                   fontsize=60, at_risk_count_from_start_of_period=True)
 
 ax1.set_xlabel('Time (Months)', fontsize=60, labelpad=150)
 ax1.set_ylabel('Survival Probability', fontsize=60, labelpad=30)
-ax1.set_title('PFS', fontsize=60, pad=30)
+ax1.set_title('OS', fontsize=60, pad=30)
 ax1.annotate(f'p= {p_valuett:.4f}', xy=(0.5, 0.8), xycoords='axes fraction', fontsize=60,bbox=dict(facecolor='white', alpha=0.7, edgecolor='white', boxstyle='round,pad=0.3'))
 
 # Customize the border of the plot
@@ -202,7 +203,7 @@ ax1.tick_params(axis='both', which='major', labelsize=60, length=15, width=6)
 # Remove legend
 ax1.legend().set_visible(False)
 plt.subplots_adjust(bottom=0.1)
-plt.savefig(r'/results/kaplan_meier_train_pfs_ZZU_train.png', bbox_inches='tight')
+plt.savefig(r'E:\Multi-omic Immunity\GCN_immune\scripts\LGG\picture\figure_3_A\prognosis\KM_curve\KMpicture\kaplan_meier_train_os_ZZU.png', bbox_inches='tight')
 #plt.show()
 
 fig, ax2 = plt.subplots(figsize=(12, 8))
@@ -215,11 +216,11 @@ kmf_val_low.plot_survival_function(ax=ax2, label='Low-risk Group', ci_show=True,
 
 # Add "at risk" counts manually
 add_at_risk_counts(kmf_val_high, kmf_val_low, ax=ax2, rows_to_show=['At risk'], labels=['High Risk', 'Low Risk'],
-                   fontsize=60)
+                   fontsize=60, at_risk_count_from_start_of_period=True)
 
-ax2.set_xlabel('Time (Months)', fontsize=60, labelpad=150)
+ax2.set_xlabel('Time (Days)', fontsize=60, labelpad=150)
 ax2.set_ylabel('Survival Probability', fontsize=60, labelpad=30)
-ax2.set_title('PFS', fontsize=60, pad=30)
+ax2.set_title('OS', fontsize=60, pad=30)
 ax2.annotate(f'p= {p_valuets:.4f}', xy=(0.5, 0.8), xycoords='axes fraction', fontsize=60,bbox=dict(facecolor='white', alpha=0.7, edgecolor='white', boxstyle='round,pad=0.3'))
 
 # Customize the border of the plot
@@ -234,5 +235,5 @@ ax2.legend().set_visible(False)
 #ax2.legend(loc='upper left', fontsize=60, bbox_to_anchor=(1, 1))
 
 plt.subplots_adjust(bottom=0.1)
-plt.savefig(r'/results/kaplan_meier_valid_pfs_ZZU_valid.png', bbox_inches='tight')
+plt.savefig(r'E:\Multi-omic Immunity\GCN_immune\scripts\LGG\picture\figure_3_A\prognosis\KM_curve\KMpicture\kaplan_meier_valid_os_ZZU.png', bbox_inches='tight')
 #plt.show()
